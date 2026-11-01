@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AisleWise | Shop Smarter</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6f4;color:#182b25;font-family:Arial,sans-serif}
+header{background:#123d32;color:white;padding:22px 6%;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:25px;font-weight:800}
+.logo span{color:#b7e36b}
+header small{color:#d4e7df}
+main{max-width:1050px;margin:25px auto;padding:0 18px}
+.store{background:#e3f0e8;border-radius:14px;padding:16px;margin-bottom:20px}
+.tabs{display:flex;gap:10px;margin:20px 0}
+button{border:0;border-radius:9px;padding:11px 16px;background:#dce8e1;color:#173d32;font-weight:bold;cursor:pointer}
+button.active,.primary{background:#176b4d;color:white}
+input,select{padding:12px;border:1px solid #ccd8d0;border-radius:9px;font-size:15px;width:100%;margin:7px 0}
+.panel{background:white;padding:20px;border-radius:14px;margin-bottom:18px;box-shadow:0 2px 10px #163d3210}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.product{padding:13px 0;border-bottom:1px solid #edf0ed}
+.muted{color:#718078;font-size:13px}
+.price{font-weight:bold;color:#176b4d}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}
+.stat{background:#f0f6f1;border-radius:10px;padding:14px}
+.stat strong{display:block;font-size:21px;margin-top:5px}
+.recipe{border:1px solid #e1e9e3;border-radius:11px;padding:14px;margin:12px 0}
+.check{width:auto;margin-right:8px}
+.delete{background:#f8e9e6;color:#963e31}
+footer{text-align:center;padding:25px;color:#718078;font-size:12px}
+@media(max-width:600px){.stats{grid-template-columns:1fr}.row{align-items:flex-start;flex-direction:column}header{padding:18px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">🛒 Aisle<span>Wise</span></div>
+ <small>SHOP SMARTER. SAVE MORE.</small>
+</header>
+<main>
+ <div class="store">
+  <strong>📍 Your test store</strong><br>
+  Walmart — Lexington Park, Maryland
+  <div class="muted">Demo store • Prices and aisle locations are examples</div>
+ </div>
+
+ <div class="tabs">
+  <button class="active" onclick="showTab('shopping',this)">Shopping</button>
+  <button onclick="showTab('meals',this)">Meal Planner</button>
+ </div>
+
+ <section id="shopping">
+  <div class="panel">
+   <h2>My Shopping Dashboard</h2>
+   <div class="stats">
+    <div class="stat">Shopping list<strong id="count">0 items</strong></div>
+    <div class="stat">Estimated total<strong id="total">$0.00</strong></div>
+    <div class="stat">Budget remaining<strong id="remaining">$100.00</strong></div>
+   </div>
+   <label>Weekly shopping budget</label>
+   <input id="budget" type="number" value="100" min="0" onchange="render()">
+  </div>
+
+  <div class="panel">
+   <h3>Find products</h3>
+   <input id="search" placeholder="Search milk, bread, chicken..." oninput="showProducts()">
+   <div id="products"></div>
+  </div>
+
+  <div class="panel">
+   <div class="row"><h3>My Shopping List</h3><button class="delete" onclick="clearList()">Clear list</button></div>
+   <div id="list"></div>
+  </div>
+ </section>
+
+ <section id="meals" hidden>
+  <div class="panel">
+   <h2>🥗 AI Meal Planner</h2>
+   <p class="muted">Build a sample meal plan and add its ingredients to your shopping list.</p>
+   <label>How many people are you feeding?</label>
+   <select id="people">
+    <option value="1">1 person</option><option value="2">2 people</option>
+    <option value="3">3 people</option><option value="4" selected>4 people</option>
+    <option value="5">5 people</option><option value="6">6 people</option>
+   </select>
+   <label>How much can you spend on groceries?</label>
+   <input id="mealBudget" type="number" value="125" min="0">
+   <label>Food preference</label>
+   <select id="diet">
+    <option value="any">No restrictions</option>
+    <option value="vegetarian">Vegetarian</option>
+    <option value="no-beef">No beef</option>
+   </select>
+   <button class="primary" onclick="makeMeals()">Build my meal plan</button>
+  </div>
+  <div class="panel">
+   <h3>Your meal plan</h3>
+   <div id="mealResults" class="muted">Your meals will appear here.</div>
+  </div>
+ </section>
+</main>
+<footer>AisleWise prototype • Sample products and estimates only • Not connected to live Walmart prices or inventory</footer>
+
+<script>
+const catalog=[
+ {name:"Milk",price:3.48,aisle:"Example: Dairy"},
+ {name:"White Bread",price:2.18,aisle:"Example: Bakery"},
+ {name:"Eggs",price:3.25,aisle:"Example: Dairy"},
+ {name:"Chicken Breast",price:8.97,aisle:"Example: Meat"},
+ {name:"Rice",price:3.98,aisle:"Example: Pantry"},
+ {name:"Ground Beef",price:6.48,aisle:"Example: Meat"},
+ {name:"Spaghetti",price:1.48,aisle:"Example: Pasta"},
+ {name:"Tomato Sauce",price:1.78,aisle:"Example: Canned Goods"},
+ {name:"Cheese",price:3.48,aisle:"Example: Dairy"},
+ {name:"Lettuce",price:2.18,aisle:"Example: Produce"}
+];
+let list=JSON.parse(localStorage.getItem("aislewiseList")||"[]");
+let meals=[];
+
+function save(){localStorage.setItem("aislewiseList",JSON.stringify(list));render()}
+function showTab(id,btn){
+ document.getElementById("shopping").hidden=id!=="shopping";
+ document.getElementById("meals").hidden=id!=="meals";
+ document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
+}
+function showProducts(){
+ const q=document.getElementById("search").value.toLowerCase();
+ const matches=catalog.filter(p=>p.name.toLowerCase().includes(q));
+ document.getElementById("products").innerHTML=matches.map(p=>
+ `<div class="product row"><div><strong>${p.name}</strong><div class="muted">${p.aisle}</div></div><div><span class="price">$${p.price.toFixed(2)}</span> <button onclick="add('${p.name}')">Add</button></div></div>`
+ ).join("")||"No matching demo products.";
+}
+function add(name){
+ const p=catalog.find(x=>x.name===name);
+ const found=list.find(x=>x.name===name);
+ if(found)found.qty++;
+ else list.push({name:p.name,price:p.price,qty:1,done:false});
+ save();
+}
+function render(){
+ const total=list.reduce((s,x)=>s+x.price*x.qty,0);
+ const budget=Number(document.getElementById("budget").value)||0;
+ document.getElementById("count").textContent=list.reduce((s,x)=>s+x.qty,0)+" items";
+ document.getElementById("total").textContent="$"+total.toFixed(2);
+ document.getElementById("remaining").textContent="$"+(budget-total).toFixed(2);
+ document.getElementById("list").innerHTML=list.map((x,i)=>
+ `<div class="product row">
+ <div><label><input class="check" type="checkbox" ${x.done?"checked":""} onchange="toggle(${i})">${x.name} × ${x.qty}</label></div>
+ <div><strong>$${(x.price*x.qty).toFixed(2)}</strong> <button class="delete" onclick="removeItem(${i})">Remove</button></div>
+ </div>`).join("")||'<p class="muted">Your shopping list is empty. Add a product above.</p>';
+}
+function toggle(i){list[i].done=!list[i].done;save()}
+function removeItem(i){list.splice(i,1);save()}
+function clearList(){if(confirm("Clear your shopping list?")){list=[];save()}}
+const recipes=[
+ {name:"Chicken and Rice Bowls",diet:"no-beef",cost:15,items:["Chicken Breast","Rice"]},
+ {name:"Spaghetti with Meat Sauce",diet:"beef",cost:13,items:["Ground Beef","Spaghetti","Tomato Sauce"]},
+ {name:"Cheese and Rice Bowls",diet:"vegetarian",cost:10,items:["Rice","Cheese","Lettuce"]},
+ {name:"Chicken Cheese Wraps",diet:"no-beef",cost:14,items:["Chicken Breast","Cheese","Lettuce"]}
+];
+function makeMeals(){
+ const people=Number(document.getElementById("people").value);
+ const budget=Number(document.getElementById("mealBudget").value)||0;
+ const diet=document.getElementById("diet").value;
+ let choices=recipes.filter(r=>diet==="any"||r.diet==="vegetarian"||r.diet===diet);
+ meals=Array.from({length:5},(_,i)=>choices[i%choices.length]);
+ const estimated=meals.reduce((s,r)=>s+r.cost*people/4,0);
+ document.getElementById("mealResults").innerHTML=
+ meals.map((r,i)=>`<div class="recipe"><strong>Day ${i+1}: ${r.name}</strong><p class="muted">Estimated ingredients: $${(r.cost*people/4).toFixed(2)}</p></div>`).join("")+
+ `<h3>Estimated five-day cost: $${estimated.toFixed(2)}</h3>`+
+ `<p class="muted">${estimated<=budget?"This sample plan is within your budget.":"This sample plan is over your budget."}</p>`+
+ `<button class="primary" onclick="addMealIngredients()">Add meal ingredients to shopping list</button>`;
+}
+function addMealIngredients(){
+ meals.forEach(r=>r.items.forEach(name=>{
+  const p=catalog.find(x=>x.name===name);
+  if(p){const found=list.find(x=>x.name===name);if(found)found.qty++;else list.push({name:p.name,price:p.price,qty:1,done:false})}
+ }));
+ save();
+ alert("Meal ingredients added to your shopping list!");
+}
+showProducts();render();
+</script>
+</body>
+</html>
